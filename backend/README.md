@@ -1,0 +1,180 @@
+# SistemaAPI PIBIC
+
+Plataforma educacional para criação e resolução de casos clínicos, desenvolvida para apoiar o ensino e a aprendizagem na área da saúde.
+
+O sistema permite que professores construam experiências de estudo baseadas em situações clínicas, reunindo informações do paciente, contexto médico, perguntas e alternativas. Os casos podem ser organizados por área, especialidade e nível de dificuldade.
+
+## Principais funcionalidades
+
+### Para professores
+
+- Criar, editar e publicar casos clínicos.
+- Cadastrar pacientes, conteúdos clínicos e perguntas.
+- Gerar e ajustar conteúdos clínicos com apoio de IA.
+- Gerar e persistir perguntas com IA, tanto para conteúdos clínicos manuais quanto para os gerados por IA.
+
+Na geração clínica e nos ajustes posteriores, especialidade, diagnóstico esperado e objetivo de aprendizagem são âncoras obrigatórias do professor. A API valida a coerência dessas informações, dos campos clínicos e do perfil do paciente antes de chamar a geração principal. Na criação, preserva literalmente todo campo preenchido e completa somente lacunas. Incoerências confirmadas respondem `422 Unprocessable Entity` com mensagens por campo, mantendo o rascunho e sem salvar conteúdo clínico parcial.
+- Revisar respostas discursivas e de conduta antes de incluí-las no cálculo do desempenho.
+- Definir o nível de dificuldade e o tempo limite de cada caso.
+- Acompanhar o desempenho dos alunos.
+
+### Para alunos
+
+- Acessar casos clínicos publicados.
+- Resolver casos dentro do tempo definido.
+- Receber o resultado das respostas.
+- Consultar o histórico e acompanhar o próprio desempenho.
+
+### Gestão da plataforma
+
+- Gerenciamento de alunos, professores e usuários.
+- Controle de acesso conforme o perfil de cada usuário.
+- Proteção das respostas e dos dados utilizados nas avaliações.
+
+## Geração de perguntas com IA
+
+Professores podem gerar perguntas para um caso clínico em rascunho com `POST /casos/{id}/ia/perguntas/gerar`. As perguntas retornadas já ficam persistidas no caso, independentemente de o conteúdo clínico ter sido criado manualmente ou gerado por IA.
+
+```json
+{
+  "quantidade": 5,
+  "tipo": "MULTIPLA_ESCOLHA",
+  "quantidadeAlternativas": 4,
+  "instrucoesAdicionais": "Priorize raciocínio diagnóstico e conduta inicial.",
+  "dadosSinteticosOuDesidentificados": true
+}
+```
+
+Para gerar um lote variado em uma única chamada, substitua os campos do modo único por uma distribuição de 2 a 3 tipos:
+
+```json
+{
+  "distribuicao": [
+    { "tipo": "MULTIPLA_ESCOLHA", "quantidade": 2, "quantidadeAlternativas": 4 },
+    { "tipo": "VERDADEIRO_FALSO", "quantidade": 1 },
+    { "tipo": "DISCURSIVA", "quantidade": 1 }
+  ],
+  "instrucoesAdicionais": "Priorize raciocínio diagnóstico e conduta inicial.",
+  "dadosSinteticosOuDesidentificados": true
+}
+```
+
+No modo único, os valores padrão são 5 perguntas, tipo `MULTIPLA_ESCOLHA` e 4 alternativas. Os tipos disponíveis para novas perguntas são `MULTIPLA_ESCOLHA`, `VERDADEIRO_FALSO` e `DISCURSIVA`; `DIAGNOSTICO` e `CONDUTA_CLINICA` estão temporariamente indisponíveis. Na distribuição, cada tipo pode aparecer uma vez e a soma deve ficar entre 1 e 10 perguntas. A quantidade de alternativas é aceita somente para `MULTIPLA_ESCOLHA`. As instruções adicionais aceitam até 2.000 caracteres. Em caso de sucesso, a API responde com `201 Created` e a lista de perguntas persistidas.
+
+## Revisão humana das respostas
+
+Respostas de múltipla escolha e verdadeiro ou falso são corrigidas automaticamente. Respostas `DISCURSIVA` permanecem com `correta: null` até a decisão do professor responsável ou de um administrador.
+
+Perguntas `DISCURSIVA` podem armazenar uma `rubrica` estruturada. Registros legados dos tipos `DIAGNOSTICO` e `CONDUTA_CLINICA` continuam legíveis e avaliáveis, mas não podem ser criados nem gerados novamente. O campo textual `resposta` permanece obrigatório para compatibilidade com registros e clientes anteriores.
+
+- `GET /casos/{id}/respostas/pendentes-revisao` lista as respostas pendentes de forma paginada.
+- `PATCH /casos/{id}/respostas/{idResposta}/revisao`, com `{"correta": true}` ou `{"correta": false}`, registra a decisão humana.
+
+Uma repetição com a mesma decisão é idempotente; tentar trocar uma decisão já registrada responde com `409 Conflict`. Somente respostas já avaliadas entram no denominador da nota e dos indicadores de desempenho.
+
+## Perfis de execução
+
+O perfil padrão é `prod`: sem configuração, a aplicação exige `DB_URL`, `JWT_SECRET` (64+ caracteres) e `CORS_ALLOWED_ORIGINS` em HTTPS e não cria usuários de exemplo. Para desenvolvimento local, inicie explicitamente com `SPRING_PROFILES_ACTIVE=dev`, que cria `admin`, `professor` e `aluno` com senhas conhecidas e nunca deve ser usado em servidor público.
+
+Em `prod`, o endereço do cliente vem de `X-Forwarded-For` lido pelo Tomcat a partir do último proxy confiável, o que impede que o cliente forje o IP usado nos bloqueios de login e de cadastro. São confiáveis os proxies em redes privadas (10/8, 172.16/12, 192.168/16, 127/8). Se a hospedagem usar outro endereço no balanceador, informe a expressão regular em `SERVER_TOMCAT_REMOTEIP_INTERNAL_PROXIES`; sem isso o HTTPS do proxy não é reconhecido e o redirecionamento obrigatório para HTTPS entra em laço.
+
+## Piloto de IA com FreeLLMAPI
+
+Para o piloto privado, com aproximadamente 15 a 20 usuários, a API pode usar o [FreeLLMAPI](https://github.com/tashfeenahmed/freellmapi) `v0.6.3` como gateway local compatível com a API da OpenAI. O backend é o único cliente do gateway: o painel e a porta `3001` devem continuar restritos à máquina ou à rede privada.
+
+O gateway não fornece créditos próprios. Ele reúne somente os provedores para os quais forem cadastradas chaves válidas e continua sujeito às cotas, aos termos e à disponibilidade de cada serviço gratuito. Essa configuração é destinada a testes e validação, sem SLA; antes do lançamento público, substitua-a por um serviço pago com contrato e garantias adequadas.
+
+### Inicialização
+
+1. Crie o arquivo local `.env`, configure as variáveis descritas em `docs/ia-piloto.md` e gere uma chave de criptografia exclusiva para `FREELLMAPI_CHAVE_CRIPTOGRAFIA`.
+2. Inicie PostgreSQL e o gateway:
+
+   ```bash
+   docker compose --profile ia up -d
+   ```
+
+3. Abra `http://localhost:3001`, cadastre no painel as chaves dos provedores gratuitos que serão usados, ordene a cadeia de fallback e copie a chave unificada `freellmapi-...`.
+4. Defina a chave unificada em `IA_CHAVE_API` no ambiente do processo Spring. Use `IA_URL_BASE=http://127.0.0.1:3001/v1` e `IA_MODELO=auto`.
+5. Execute a aplicação com `SPRING_PROFILES_ACTIVE=prod`.
+
+O arquivo `.env` é lido pelo Docker Compose, mas não é importado automaticamente por uma execução direta do Maven. Ao iniciar o backend pela IDE, pelo Maven ou por um serviço do sistema, configure as mesmas variáveis no ambiente desse processo.
+
+As opções e o procedimento operacional completo estão em [docs/ia-piloto.md](docs/ia-piloto.md).
+
+### Prioridade de modelos
+
+`IA_MODELOS_CASO` e `IA_MODELOS_PERGUNTAS` definem, separados por vírgula, a ordem de modelos pedida ao gateway. O padrão é `gpt-oss-120b,gpt-oss-20b,nemotron-3-super-120b-a12b,gemini-3.5-flash-lite,ministral-14b-latest` seguido de `IA_MODELO`: primeiro os modelos `gpt-oss` (rápidos e com 8.000 tokens/min no Groq gratuito), depois NVIDIA, Gemini e Mistral. O `qwen3.8-27b` do Groq ficou de fora porque o limite de 1.000 tokens/min dele não comporta nem o prompt de entrada. O próximo modelo só é tentado quando o provedor recusa o anterior (modelo inexistente, cota esgotada ou erro HTTP); tempo esgotado e gateway fora do ar não trocam de modelo. Os ids precisam ser exatamente os exibidos em `GET /v1/models` do gateway. Para conferir latência e formato JSON de cada modelo, rode `./scripts/testar-modelos-ia.ps1` com `IA_CHAVE_API` definido.
+
+## Contas de demonstração
+
+Para eventos, professores podem criar a própria conta em `/cadastro-professor` no front. O recurso fica desligado por padrão e é configurado por:
+
+| Variável | Padrão | Uso |
+|---|---|---|
+| `DEMO_CADASTRO_HABILITADO` | `false` | Liga `GET /auth/demonstracao` e `POST /auth/demonstracao/cadastro`. |
+| `DEMO_VALIDADE` | `3d` | Após esse prazo a conta não entra mais e tokens já emitidos deixam de valer. |
+| `DEMO_MAXIMO_CONTAS` | `50` | Total de contas de demonstração permitidas. |
+| `DEMO_MAXIMO_CADASTROS_POR_IP` | `10` | Cadastros por IP em uma hora antes de bloqueio temporário. Sem código de convite: o e-mail vira o usuário de acesso. |
+
+As contas criadas têm papel `PROFESSOR`, acessam apenas os próprios casos e ficam marcadas em `usuario.conta_demonstracao`. Os limites de IA vêm ligados por padrão, de modo que nenhum participante esgota a cota dos demais. Desligue o cadastro ao final do evento.
+
+## Proteções do piloto
+
+- Os limites vêm habilitados por padrão; use `IA_LIMITES_HABILITADOS=false` apenas em testes locais. Os valores padrão são 5 operações por usuário/minuto, 20 por usuário/dia e 3 chamadas simultâneas **no total da plataforma** (não por usuário); para vários professores ao mesmo tempo, use `IA_MAXIMO_SIMULTANEAS=25`. Geração, reparo e validação internos da mesma operação idempotente consomem uma única unidade.
+- Um limite excedido responde com `429 Too Many Requests` e o cabeçalho `Retry-After`, em segundos.
+- Quando os provedores gratuitos esgotam temporariamente a capacidade, a API responde com `503 Service Unavailable` e `Retry-After`.
+- Uma chamada de IA que exceda 60 segundos responde com `504 Gateway Timeout`.
+- Geração, ajuste e perguntas aceitam `Idempotency-Key` UUID. Uma tentativa concluída é reproduzida sem chamar novamente o provedor; uma tentativa ainda em andamento responde com `409` e `Retry-After`.
+- O ledger guarda somente hashes, estado e identificadores de resultado. A V19 remove a antiga coluna que duplicava respostas clínicas. A chave expira após `IA_IDEMPOTENCIA_TTL` (1 hora por padrão) e é reutilizada com bloqueio transacional.
+- A auditoria registra duração do provedor, modelo efetivo, tokens quando informados e o ID de correlação, sem duplicar prompt ou saída clínica.
+- Corpos de requisição maiores que 1 MiB respondem com `413 Content Too Large`.
+- Os limites podem ser ajustados pelas variáveis `IA_LIMITE_POR_MINUTO`, `IA_LIMITE_POR_DIA`, `IA_MAXIMO_SIMULTANEAS`, `IA_TEMPO_LIMITE`, `IA_IDEMPOTENCIA_TTL` e `HTTP_LIMITE_CORPO_BYTES`.
+
+Quando habilitados, cotas e vagas simultâneas são coordenadas pelo banco em `ControleUsoIaStore`. O ledger de idempotência também fica no PostgreSQL e evita repetir uma mesma tentativa mesmo após perda da resposta HTTP, sem duplicar conteúdo clínico.
+
+## Desempenho e recuperação da geração
+
+A coerência usa um contrato compacto com status e violações. Pré-validações aprovadas podem ser reutilizadas por cinco minutos, em cache local de até 256 hashes; o hash inclui contexto completo, versão do prompt e modelo configurado. Alterar paciente, âncoras ou conteúdo invalida a entrada. A pós-validação da nova saída sempre permanece e recebe o paciente candidato efetivamente persistível. Para desativar o cache, use `APP_IA_CACHE_PRE_VALIDACAO_TTL=0s`.
+
+O caminho normal continua com três chamadas, reduzidas a duas em um acerto do cache. Confirmações e reparos continuam limitados; o reparo recebe os campos válidos da resposta parcial. Antes de cada chamada clínica, verifica-se se os seis minutos de orçamento da operação ainda comportam o timeout do provedor. Isso não cancela uma chamada já em execução nem impõe prazo rígido à transação final. O front aguarda até 390 segundos para geração/ajuste clínico e 75 segundos para perguntas. Configure o timeout do proxy/gateway de acordo com essa janela.
+
+Eventos `ia_fase` registram duração, resultado, tokens/modelo quando disponíveis e identificador da solicitação, sem texto clínico. Incluem pré-validação, confirmação, geração, reparo, pós-validação e persistência. Para calcular p50/p95 por fase e resultado em um log de execução:
+
+```powershell
+./scripts/resumir-latencia-ia.ps1 -LogPath ./execucao.log
+```
+
+`PUT /casos/{id}/perguntas/lote` salva de 1 a 100 perguntas em transação única. Cada item contém `id` (nulo para criação) e `pergunta` no contrato de `PerguntaRequest`; a resposta mantém a ordem recebida. O lote rejeita IDs repetidos e perguntas de outro caso. Criar itens sem ID não tem garantia de idempotência se a resposta se perder; confira a lista persistida antes de repetir uma criação incerta.
+
+As otimizações não incluem troca automática de modelo, redução do teto de tokens ou jobs assíncronos. Essas decisões dependem de medições reais de latência e qualidade; nenhum ganho percentual de inferência foi medido nesta alteração. Detalhes e validação em [docs/correcoes-revisao-2026-09-05.md](docs/correcoes-revisao-2026-09-05.md).
+
+## Dados clínicos e revisão humana
+
+Envie à IA somente casos inteiramente sintéticos ou previamente desidentificados. Não envie nomes, CPF, RG, CNS, número de prontuário, telefone, e-mail, endereço, datas exatas, instituição, profissional identificável, imagens ou qualquer combinação que permita reconhecer uma pessoa real. O filtro da aplicação reduz alguns identificadores óbvios, mas não garante anonimização.
+
+Toda saída deve ser revisada por um professor antes da publicação. O recurso é educacional: não substitui avaliação clínica, diagnóstico, prescrição ou decisão assistencial. Consulte a política completa em [docs/politica-dados-clinicos.md](docs/politica-dados-clinicos.md).
+
+## Teste das migrações no PostgreSQL real
+
+O teste de integração usa Testcontainers e fica desabilitado sem autorização explícita. Com o Docker em execução, rode dentro de `Sistema_Crud_API_PIBIC`:
+
+```powershell
+$env:RUN_POSTGRES_TESTS = "true"
+.\mvnw.cmd test
+```
+
+Em Bash:
+
+```bash
+RUN_POSTGRES_TESTS=true ./mvnw test
+```
+
+Esse teste aplica as migrações Flyway em PostgreSQL 16 e valida o esquema real. A automação de integração contínua já executa a suíte com `RUN_POSTGRES_TESTS=true`.
+
+## Tecnologias
+
+Java, Spring Boot, Spring Security, Spring Data JPA, Spring AI, PostgreSQL, Flyway e Maven.
+
+## Sobre o projeto
+
+O SistemaAPI PIBIC busca aproximar o aprendizado teórico da tomada de decisão clínica, oferecendo uma estrutura organizada para criação, aplicação e acompanhamento de atividades educacionais.

@@ -1,0 +1,152 @@
+package com.SistemaApiCrud.SistemaCrud.service;
+
+import org.springframework.ai.chat.client.ResponseEntity;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.StructuredOutputValidationAdvisor;
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.metadata.Usage;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.SistemaApiCrud.SistemaCrud.dto.CasoClinicoGeradoIaDTO;
+import com.SistemaApiCrud.SistemaCrud.exception.AiProviderException;
+import com.SistemaApiCrud.SistemaCrud.exception.CapacidadeIaEsgotadaException;
+import com.SistemaApiCrud.SistemaCrud.exception.LimiteUsoIaException;
+import com.SistemaApiCrud.SistemaCrud.exception.ServicoIndisponivelException;
+import com.SistemaApiCrud.SistemaCrud.exception.TempoEsgotadoIaException;
+
+@Service
+public class SpringAiCasoClinicoClient implements CasoClinicoAiClient {
+
+    private final ChatClient clienteConversa;
+    private final ChatClient clienteCoerencia;
+    private final ControleUsoIa controleUsoIa;
+    private final PrioridadeModelosIa prioridadeModelos;
+
+    public SpringAiCasoClinicoClient(
+            ChatClient.Builder construtorClienteConversa,
+            ControleUsoIa controleUsoIa) {
+        this(construtorClienteConversa, controleUsoIa, PrioridadeModelosIa.padrao());
+    }
+
+    @Autowired
+    public SpringAiCasoClinicoClient(
+            ChatClient.Builder construtorClienteConversa,
+            ControleUsoIa controleUsoIa,
+            PrioridadeModelosIa prioridadeModelos) {
+        this.clienteCoerencia = construtorClienteConversa.clone()
+                .defaultAdvisors(StructuredOutputValidationAdvisor.builder()
+                        .outputType(com.SistemaApiCrud.SistemaCrud.dto.CoerenciaIaDTO.class)
+                        .maxRepeatAttempts(0)
+                        .build())
+                .build();
+        this.clienteConversa = construtorClienteConversa
+                .defaultAdvisors(StructuredOutputValidationAdvisor.builder()
+                        .outputType(CasoClinicoGeradoIaDTO.class)
+                        .maxRepeatAttempts(0)
+                        .build())
+                .build();
+        this.controleUsoIa = controleUsoIa;
+        this.prioridadeModelos = prioridadeModelos;
+    }
+
+    @Override
+    public CasoClinicoGeradoIaDTO gerarConteudo(String instrucoesSistema, String contexto) {
+        return gerarConteudoComMetricas(instrucoesSistema, contexto).entidade();
+    }
+
+    @Override
+    public RespostaIaComMetricas<CasoClinicoGeradoIaDTO> gerarConteudoComMetricas(
+            String instrucoesSistema,
+            String contexto) {
+        return chamar(instrucoesSistema, contexto, false);
+    }
+
+    @Override
+    public RespostaIaComMetricas<CasoClinicoGeradoIaDTO> avaliarCoerencia(
+            String instrucoesSistema, String contexto) {
+        return chamar(instrucoesSistema, contexto, true);
+    }
+
+    private RespostaIaComMetricas<CasoClinicoGeradoIaDTO> chamar(
+            String instrucoesSistema, String contexto, boolean coerencia) {
+        try {
+            long inicio = System.nanoTime();
+            if (coerencia) {
+                var resposta = controleUsoIa.executar(() -> PrioridadeModelosIa.executar(
+                        prioridadeModelos.modelosCaso(),
+                        modelo -> comModelo(clienteCoerencia.prompt(), modelo)
+                                .system(instrucoesSistema).user(contexto).call()
+                                .responseEntity(com.SistemaApiCrud.SistemaCrud.dto.CoerenciaIaDTO.class)));
+                if (resposta == null) {
+                    throw new AiProviderException("A IA nao retornou uma avaliacao");
+                }
+                var avaliacao = resposta.entity();
+                if (avaliacao == null) {
+                    throw new AiProviderException("A IA retornou uma avaliacao em formato invalido");
+                }
+                return comMetricas(avaliacao.paraResultado(), resposta.response(),
+                        (System.nanoTime() - inicio) / 1_000_000L);
+            }
+            ResponseEntity<ChatResponse, CasoClinicoGeradoIaDTO> resposta = controleUsoIa.executar(
+                    () -> PrioridadeModelosIa.executar(
+                            prioridadeModelos.modelosCaso(),
+                            modelo -> comModelo(clienteConversa.prompt(), modelo)
+                                    .system(instrucoesSistema)
+                                    .user(contexto)
+                                    .call()
+                                    .responseEntity(CasoClinicoGeradoIaDTO.class)));
+            long duracaoMs = (System.nanoTime() - inicio) / 1_000_000L;
+            CasoClinicoGeradoIaDTO conteudo = resposta == null ? null : resposta.entity();
+
+            if (conteudo == null) {
+                throw new AiProviderException("A IA retornou um conteudo em formato invalido");
+            }
+            return comMetricas(conteudo, resposta == null ? null : resposta.response(), duracaoMs);
+        } catch (AiProviderException
+                | CapacidadeIaEsgotadaException
+                | LimiteUsoIaException
+                | TempoEsgotadoIaException falha) {
+            throw falha;
+        } catch (RuntimeException falha) {
+            if (FalhasIa.possuiLimiteDoProvedor(falha)) {
+                throw new CapacidadeIaEsgotadaException(
+                        "Todos os provedores gratuitos de IA atingiram a capacidade disponivel",
+                        60,
+                        falha);
+            }
+            if (FalhasIa.possuiTempoEsgotado(falha)) {
+                throw new TempoEsgotadoIaException(
+                        "O provedor de IA excedeu o tempo limite da requisicao",
+                        falha);
+            }
+            if (FalhasIa.possuiIndisponibilidadeDeRede(falha)) {
+                throw new ServicoIndisponivelException(
+                        "O gateway de IA esta indisponivel. Verifique se o servico configurado em IA_URL_BASE esta ativo",
+                        falha);
+            }
+            throw new AiProviderException("Nao foi possivel gerar conteudo com o provedor de IA", falha);
+        }
+    }
+
+    private static ChatClient.ChatClientRequestSpec comModelo(
+            ChatClient.ChatClientRequestSpec requisicao, String modelo) {
+        return modelo == null ? requisicao : requisicao.options(ChatOptions.builder().model(modelo));
+    }
+
+    private RespostaIaComMetricas<CasoClinicoGeradoIaDTO> comMetricas(
+            CasoClinicoGeradoIaDTO conteudo,
+            ChatResponse resposta,
+            long duracaoMs) {
+        ChatResponseMetadata metadados = resposta == null ? null : resposta.getMetadata();
+        Usage uso = metadados == null ? null : metadados.getUsage();
+        return new RespostaIaComMetricas<>(
+                conteudo,
+                duracaoMs,
+                metadados == null ? null : metadados.getModel(),
+                uso == null ? null : uso.getPromptTokens(),
+                uso == null ? null : uso.getCompletionTokens());
+    }
+}

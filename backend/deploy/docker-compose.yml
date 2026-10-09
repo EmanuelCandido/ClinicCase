@@ -1,0 +1,57 @@
+# Producao na VM Oracle Cloud Always Free: API + gateway de IA + HTTPS automatico (Caddy).
+# O banco fica no Supabase; DB_URL aponta para o pooler de sessao dele.
+services:
+  api:
+    build: ../Sistema_Crud_API_PIBIC
+    image: sistemaapi-pibic:latest
+    container_name: pibic_api
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      IA_URL_BASE: http://freellmapi:3001/v1
+    depends_on:
+      freellmapi:
+        condition: service_healthy
+    expose:
+      - "8080"
+
+  freellmapi:
+    image: ghcr.io/tashfeenahmed/freellmapi:v0.6.3
+    container_name: pibic_freellmapi
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      ENCRYPTION_KEY: ${FREELLMAPI_CHAVE_CRIPTOGRAFIA:?Defina FREELLMAPI_CHAVE_CRIPTOGRAFIA no .env}
+    # Painel acessivel somente pela propria VM (use tunel SSH: ssh -L 3001:127.0.0.1:3001 ...).
+    ports:
+      - "127.0.0.1:3001:3001"
+    volumes:
+      - freellmapi_data:/app/server/data
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/api/ping').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  caddy:
+    image: caddy:2
+    container_name: pibic_caddy
+    restart: unless-stopped
+    environment:
+      API_DOMINIO: ${API_DOMINIO:?Defina API_DOMINIO no .env}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api
+
+volumes:
+  freellmapi_data:
+  caddy_data:
+  caddy_config:

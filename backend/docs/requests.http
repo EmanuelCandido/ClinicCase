@@ -1,0 +1,233 @@
+@baseUrl = http://localhost:8080
+@usuarioAdmin = defina-o-usuario-admin-do-piloto
+@senhaAdmin = defina-a-senha-admin-do-piloto
+@usuarioProfessor = defina-o-usuario-professor-do-piloto
+@senhaProfessor = defina-a-senha-professor-do-piloto
+@usuarioAluno = defina-o-usuario-aluno-do-piloto
+@senhaAluno = defina-a-senha-aluno-do-piloto
+@urlGatewayIa = http://127.0.0.1:3001
+
+### OpenAPI
+# Execute primeiro o login admin; no perfil prod a documentacao e restrita.
+GET {{baseUrl}}/openapi.yaml
+Authorization: Bearer {{loginAdmin.response.body.$.token}}
+
+### Saude do gateway de IA local
+# Inicie antes com: docker compose --profile ia up -d
+# O painel administrativo fica em http://localhost:3001 e nao deve ser exposto publicamente.
+GET {{urlGatewayIa}}/api/ping
+
+### Login admin
+# @name loginAdmin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "{{usuarioAdmin}}",
+  "password": "{{senhaAdmin}}"
+}
+
+### Login professor
+# @name loginProfessor
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "{{usuarioProfessor}}",
+  "password": "{{senhaProfessor}}"
+}
+
+### Login aluno
+# @name loginAluno
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "{{usuarioAluno}}",
+  "password": "{{senhaAluno}}"
+}
+
+### Listar usuarios de acesso
+GET {{baseUrl}}/usuarios
+Authorization: Bearer {{loginAdmin.response.body.$.token}}
+
+### Criar usuario com role e senha BCrypt
+POST {{baseUrl}}/usuarios
+Authorization: Bearer {{loginAdmin.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "username": "novo-professor",
+  "senha": "senha-segura-123",
+  "role": "ADMIN",
+  "ativo": true
+}
+
+### Criar professor
+POST {{baseUrl}}/professores
+Authorization: Bearer {{loginAdmin.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "nome": "Dra. Silva",
+  "email": "silva@email.com",
+  "materia": "Clinica Medica"
+}
+
+### Criar aluno
+POST {{baseUrl}}/alunos
+Authorization: Bearer {{loginAdmin.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "nome": "Ana",
+  "email": "ana@email.com",
+  "curso": "Medicina",
+  "periodo": "4"
+}
+
+### Criar caso clinico
+POST {{baseUrl}}/casos
+Authorization: Bearer {{loginProfessor.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "idProfessor": 1,
+  "titulo": "Caso respiratorio",
+  "dificuldade": "MEDIA",
+  "disciplina": "Clinica Medica",
+  "areaSaude": "Medicina",
+  "estilo": "Multipla escolha",
+  "especialidade": "Pneumologia",
+  "objetivoAprendizagem": "Avaliar conduta inicial",
+  "nivelDificuldade": "MEDIA",
+  "tempoLimiteMinutos": 90
+}
+
+### Gerar conteudo clinico com IA
+# Use somente dados sinteticos ou previamente desidentificados.
+# Respostas operacionais possiveis:
+# - 413: corpo acima de HTTP_LIMITE_CORPO_BYTES;
+# - 429: cota/concorrencia atingida; respeite Retry-After;
+# - 502: resposta invalida ou falha inesperada do provedor/gateway;
+# - 503: IA sem configuracao ou capacidade temporariamente esgotada;
+#   quando houver Retry-After, aguarde o intervalo informado;
+# - 504: IA excedeu IA_TEMPO_LIMITE.
+POST {{baseUrl}}/casos/1/ia/gerar
+Authorization: Bearer {{loginProfessor.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "sintomas": "",
+  "contexto": "",
+  "examClinico": "",
+  "antecClinico": "",
+  "diagEsperado": "",
+  "permitirComplementoIa": true,
+  "incluirResultadosExamesClinicos": true,
+  "informacoesAdicionaisPaciente": "Paciente com queixa respiratoria aguda."
+}
+
+### Ajustar conteudo clinico com IA
+# Revise a saida humana e clinicamente antes de publicar o caso.
+POST {{baseUrl}}/casos/1/ia/ajustar
+Authorization: Bearer {{loginProfessor.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "tipoAjuste": "SIMPLIFICAR",
+  "instrucao": ""
+}
+
+### Gerar e persistir perguntas com IA
+# Funciona com conteudo clinico criado manualmente ou por IA.
+# Os tipos aceitos sao MULTIPLA_ESCOLHA, DISCURSIVA e VERDADEIRO_FALSO.
+POST {{baseUrl}}/casos/1/ia/perguntas/gerar
+Authorization: Bearer {{loginProfessor.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "quantidade": 5,
+  "tipo": "MULTIPLA_ESCOLHA",
+  "quantidadeAlternativas": 4,
+  "instrucoesAdicionais": "Priorize raciocinio diagnostico e conduta inicial.",
+  "dadosSinteticosOuDesidentificados": true
+}
+
+### Gerar uma distribuicao variada de perguntas com IA
+POST {{baseUrl}}/casos/1/ia/perguntas/gerar
+Authorization: Bearer {{loginProfessor.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "distribuicao": [
+    { "tipo": "MULTIPLA_ESCOLHA", "quantidade": 2, "quantidadeAlternativas": 4 },
+    { "tipo": "VERDADEIRO_FALSO", "quantidade": 1 },
+    { "tipo": "DISCURSIVA", "quantidade": 1 }
+  ],
+  "instrucoesAdicionais": "Varie os objetivos cognitivos avaliados.",
+  "dadosSinteticosOuDesidentificados": true
+}
+
+### Criar pergunta com alternativas flexiveis
+POST {{baseUrl}}/casos/1/perguntas
+Authorization: Bearer {{loginProfessor.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "texto": "Qual a melhor conduta inicial?",
+  "tipo": "MULTIPLA_ESCOLHA",
+  "gabarito": "A",
+  "resposta": "A",
+  "alternativas": [
+    { "letra": "A", "texto": "Conduta correta", "correta": true },
+    { "letra": "B", "texto": "Conduta inadequada", "correta": false }
+  ]
+}
+
+### Publicar caso
+PATCH {{baseUrl}}/casos/1/publicar
+Authorization: Bearer {{loginProfessor.response.body.$.token}}
+
+### Filtrar casos como professor
+GET {{baseUrl}}/casos?status=PUBLICADO&termo=respiratorio&page=0&size=10
+Authorization: Bearer {{loginProfessor.response.body.$.token}}
+
+### Listar casos disponiveis para aluno
+GET {{baseUrl}}/alunos/1/casos-disponiveis
+Authorization: Bearer {{loginAluno.response.body.$.token}}
+
+### Ver caso publicado completo como aluno
+GET {{baseUrl}}/alunos/1/casos/1/completo
+Authorization: Bearer {{loginAluno.response.body.$.token}}
+
+### Responder caso
+POST {{baseUrl}}/alunos/1/casos/1/responder
+Authorization: Bearer {{loginAluno.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "respostas": [
+    {
+      "idPergunta": 1,
+      "respostaMarcada": "A"
+    }
+  ]
+}
+
+### Listar respostas pendentes de revisao humana
+GET {{baseUrl}}/casos/1/respostas/pendentes-revisao?page=0&size=20&sort=dataResposta,asc
+Authorization: Bearer {{loginProfessor.response.body.$.token}}
+
+### Revisar resposta discursiva ou de conduta
+PATCH {{baseUrl}}/casos/1/respostas/1/revisao
+Authorization: Bearer {{loginProfessor.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "correta": true
+}
+
+### Desempenho do aluno
+GET {{baseUrl}}/alunos/1/desempenho
+Authorization: Bearer {{loginAluno.response.body.$.token}}

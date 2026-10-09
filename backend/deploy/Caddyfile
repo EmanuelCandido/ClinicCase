@@ -1,0 +1,10 @@
+{$API_DOMINIO} {
+	encode gzip
+	# Geracao clinica pode levar alguns minutos; o front aguarda ate 390 s.
+	reverse_proxy api:8080 {
+		transport http {
+			read_timeout 420s
+			write_timeout 420s
+		}
+	}
+}

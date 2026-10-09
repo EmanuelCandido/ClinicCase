@@ -1,0 +1,29 @@
+# Dependencias e builds
+node_modules/
+dist/
+dist-preview/
+target/
+out/
+build/
+output/
+*.class
+*.jar
+
+# IDE / ferramentas
+.idea/
+*.iml
+.vscode/
+.claude/
+.DS_Store
+
+# Segredos e configuracao local
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.pub
+
+# Logs
+*.log
+npm-debug.log*

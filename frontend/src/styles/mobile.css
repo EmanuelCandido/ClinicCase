@@ -1,0 +1,755 @@
+/*
+ * Versão para celular (até 640px).
+ * Carregada depois das outras folhas: aqui fica o layout de celular inteiro,
+ * com fundo cinza claro, cartões brancos, margens de 16px e ações fixas no rodapé.
+ */
+@media (max-width: 640px) {
+  :root {
+    --mobile-gutter: 16px;
+    --mobile-surface: #f4f6fb;
+    --mobile-radius: 16px;
+  }
+
+  body {
+    background: var(--mobile-surface);
+  }
+
+  .app-shell {
+    background: var(--mobile-surface);
+    min-height: 100dvh;
+  }
+
+  .app-main {
+    background: var(--mobile-surface);
+    min-width: 0;
+    overflow-x: clip;
+  }
+
+  /* ---------- Cabeçalhos das páginas ---------- */
+  .topbar,
+  .portal-topbar,
+  .portal-topbar--strong,
+  .dashboard-topbar {
+    background: var(--white);
+    border-bottom: 1px solid var(--gray-100);
+    gap: 12px;
+    min-height: 0;
+    padding: 14px var(--mobile-gutter);
+  }
+
+  .topbar__breadcrumb,
+  .portal-topbar__breadcrumb {
+    display: flex;
+    flex-wrap: wrap;
+    font-size: 15px;
+    gap: 2px 0;
+    line-height: 22px;
+  }
+
+  .topbar__breadcrumb-separator {
+    margin: 0 6px;
+  }
+
+  .portal-topbar h1,
+  .portal-topbar--strong h1 {
+    font-size: 22px;
+    line-height: 28px;
+  }
+
+  .portal-topbar p {
+    font-size: 14px;
+    line-height: 20px;
+    margin-top: 2px;
+  }
+
+  .dashboard-topbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .dashboard-topbar h1 {
+    font-size: 22px;
+    line-height: 28px;
+  }
+
+  .dashboard-topbar__actions {
+    align-items: stretch;
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .dashboard-topbar__actions > .button {
+    width: 100%;
+  }
+
+  /* ---------- Botões ---------- */
+  .button {
+    border-radius: 14px;
+    height: 48px;
+    min-height: 48px;
+  }
+
+  .button span {
+    font-size: 15px;
+  }
+
+  /* ---------- Painel (dashboard) ---------- */
+  .dashboard-page {
+    gap: 12px;
+    padding: 16px var(--mobile-gutter) 32px;
+  }
+
+  .dashboard-metrics {
+    display: grid;
+    gap: 8px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .metric-card {
+    background: var(--white);
+    border-radius: 14px;
+    gap: 6px;
+    height: auto;
+    min-height: 0;
+    padding: 12px 10px;
+  }
+
+  .metric-card__icon {
+    border-radius: 10px;
+    height: 32px;
+    width: 32px;
+  }
+
+  .metric-card__icon .icon {
+    height: 18px;
+    width: 18px;
+  }
+
+  .metric-card h2 {
+    font-size: 12px;
+    line-height: 15px;
+    margin: 0;
+    min-height: 30px;
+  }
+
+  .metric-card strong {
+    font-size: 24px;
+    line-height: 28px;
+  }
+
+  .dashboard-panel,
+  .performance-panel,
+  .recent-cases {
+    background: var(--white);
+    border-radius: var(--mobile-radius);
+    height: auto;
+    max-height: none;
+    overflow: visible;
+    padding: 16px;
+  }
+
+  .dashboard-panel__header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .dashboard-panel h2,
+  .recent-cases__header h2 {
+    font-size: 18px;
+    line-height: 24px;
+  }
+
+  .dashboard-panel p {
+    font-size: 14px;
+    line-height: 20px;
+  }
+
+  .bar-chart {
+    gap: 8px;
+    margin-top: 16px;
+    overflow: visible;
+  }
+
+  .bar-chart__axis {
+    display: none;
+  }
+
+  .bar-chart__plot {
+    height: 220px;
+    min-width: 0;
+  }
+
+  .bar-chart__grid:nth-child(1) { top: 5px; }
+  .bar-chart__grid:nth-child(2) { top: 55px; }
+  .bar-chart__grid:nth-child(3) { top: 105px; }
+  .bar-chart__grid:nth-child(4) { top: 155px; }
+  .bar-chart__grid:nth-child(5) { top: 205px; }
+
+  .bar-chart__bars {
+    gap: 8px;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
+    grid-template-columns: none;
+    left: 40px;
+  }
+
+  .bar-chart__bar {
+    border-radius: 8px 8px 0 0;
+  }
+
+  .bar-chart__bar-item small {
+    font-size: 11px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+  }
+
+  .dashboard-empty-chart {
+    align-items: center;
+    background: var(--white);
+    bottom: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    justify-content: center;
+    left: 40px;
+    padding: 12px;
+    position: absolute;
+    right: 0;
+    text-align: center;
+    top: 32px;
+  }
+
+  .dashboard-empty-chart span {
+    font-size: 13px;
+    line-height: 18px;
+  }
+
+  .cases-table {
+    margin-top: 8px;
+    min-width: 0;
+  }
+
+  .cases-table__row--head {
+    display: none;
+  }
+
+  .cases-table__row {
+    gap: 4px 8px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    min-height: 0;
+    padding: 12px 0;
+  }
+
+  .cases-table__row:last-child {
+    border-bottom: 0;
+  }
+
+  .cases-table__row > span:first-child {
+    font-weight: 500;
+    grid-column: 1 / -1;
+    overflow-wrap: anywhere;
+  }
+
+  .cases-table__row > span:nth-child(2) {
+    color: var(--gray-500);
+    font-size: 13px;
+  }
+
+  .cases-table__row .status-pill {
+    font-size: 12px;
+    justify-self: end;
+    padding: 2px 10px;
+  }
+
+  /* ---------- Criação de caso (etapas 1 a 4) ---------- */
+  .create-case-page {
+    padding: 16px 0 0;
+  }
+
+  .create-case-page__content,
+  .create-case-page__content--large-gap {
+    gap: 12px;
+    width: calc(100% - 2 * var(--mobile-gutter));
+  }
+
+  /* Etapas: as quatro cabem na largura, sem rolagem lateral. */
+  .stepper {
+    align-items: flex-start;
+    background: var(--white);
+    border: 0;
+    border-radius: var(--mobile-radius);
+    gap: 0;
+    height: auto;
+    justify-content: space-between;
+    min-height: 0;
+    overflow: visible;
+    padding: 14px 6px 12px;
+  }
+
+  .stepper__item {
+    flex: 1 1 0;
+    min-width: 0;
+    width: auto;
+  }
+
+  .stepper__item:not(:last-child)::after {
+    background: var(--gray-100);
+    content: '';
+    height: 2px;
+    left: calc(50% + 20px);
+    position: absolute;
+    right: calc(-50% + 20px);
+    top: 15px;
+  }
+
+  .stepper__item--complete:not(:last-child)::after {
+    background: var(--primary-light);
+  }
+
+  .stepper__link {
+    gap: 6px;
+  }
+
+  .stepper__number,
+  .stepper__check {
+    font-size: 14px;
+    height: 32px;
+    width: 32px;
+  }
+
+  .stepper__check {
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .stepper__check .icon {
+    height: 16px;
+    width: 16px;
+  }
+
+  .stepper__label {
+    font-size: 12px;
+    line-height: 15px;
+    padding: 0 2px;
+    white-space: normal;
+  }
+
+  .stepper__item--active .stepper__label {
+    font-weight: 600;
+  }
+
+  .case-form,
+  .references-form {
+    background: var(--white);
+    border: 0;
+    border-radius: var(--mobile-radius);
+    min-height: 0;
+    padding: 20px 16px;
+    width: 100%;
+  }
+
+  .create-case-page__content > .stepper + .case-form,
+  .create-case-page__content--large-gap > .stepper + .case-form,
+  .create-case-page__content--large-gap > .stepper + .references-form {
+    margin-top: 0;
+  }
+
+  .case-form__grid,
+  .clinical-form__grid {
+    gap: 16px;
+  }
+
+  /* Paciente: peso/altura e sexo lado a lado. */
+  .patient-form__grid {
+    display: grid;
+    gap: 16px 12px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .patient-form__grid > * {
+    grid-column: 1 / -1;
+    min-width: 0;
+  }
+
+  .patient-form__grid > :nth-child(3),
+  .patient-form__grid > :nth-child(4),
+  .patient-form__grid > :nth-child(5),
+  .patient-form__grid > :nth-child(6) {
+    grid-column: auto;
+  }
+
+  .patient-form__grid > .field--gender-offset {
+    justify-content: flex-end;
+  }
+
+  .gender-option {
+    width: 100%;
+  }
+
+  .field__label {
+    font-size: 15px;
+  }
+
+  .form-help {
+    font-size: 13px;
+    line-height: 18px;
+  }
+
+  .patient-form + .tip-card,
+  .clinical-form + .tip-card {
+    margin-top: 0;
+  }
+
+  .tip-card {
+    background: var(--white);
+    border: 0;
+    border-radius: var(--mobile-radius);
+    height: auto;
+    min-height: 0;
+    padding: 14px 48px 14px 16px;
+    position: relative;
+  }
+
+  .tip-card__close {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+  }
+
+  .tip-card p {
+    font-size: 13px;
+    line-height: 18px;
+  }
+
+  .references-form {
+    gap: 12px;
+  }
+
+  .upload-dropzone {
+    background: var(--white);
+    border-radius: 14px;
+    height: auto;
+    min-height: 0;
+    padding: 24px 16px;
+  }
+
+  /* Ações fixas no rodapé: salvar (só ícone), Anterior e Próximo numa linha. */
+  .page-actions,
+  .page-actions--patient {
+    align-items: center;
+    background: var(--white);
+    border-top: 1px solid var(--gray-100);
+    bottom: 0;
+    box-shadow: 0 -6px 20px rgba(16, 24, 64, 0.06);
+    display: grid;
+    gap: 8px;
+    grid-template-columns: 48px minmax(0, 1fr);
+    margin: 4px calc(-1 * var(--mobile-gutter)) 0;
+    padding: 10px var(--mobile-gutter) calc(10px + env(safe-area-inset-bottom));
+    position: sticky;
+    width: calc(100% + 2 * var(--mobile-gutter));
+    z-index: 20;
+  }
+
+  .page-actions > .button--secondary {
+    padding: 0;
+    width: 48px;
+  }
+
+  .page-actions > .button--secondary > span:not(.button__spinner) {
+    clip: rect(0 0 0 0);
+    height: 1px;
+    overflow: hidden;
+    position: absolute;
+    white-space: nowrap;
+    width: 1px;
+  }
+
+  .page-actions__next {
+    display: grid;
+    flex-direction: row;
+    gap: 8px;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  }
+
+  .page-actions__next .button {
+    width: 100%;
+  }
+
+  /* A seta de "Anterior" fica à esquerda do texto. */
+  .page-actions__next .button:first-child {
+    flex-direction: row-reverse;
+  }
+
+  .form-feedback {
+    font-size: 14px;
+  }
+
+  /* ---------- Revisão e perguntas ---------- */
+  .review-page,
+  .question-builder-page {
+    gap: 12px;
+    padding: 16px var(--mobile-gutter) 32px;
+  }
+
+  .review-page__content {
+    gap: 12px;
+  }
+
+  .medical-record,
+  .medical-record--questions {
+    background: var(--white);
+    border: 0;
+    border-radius: var(--mobile-radius);
+    max-height: none;
+    padding: 20px 16px;
+  }
+
+  .review-panel,
+  .question-builder,
+  .question-card,
+  .generation-panel {
+    border-radius: var(--mobile-radius);
+  }
+
+  .review-panel {
+    background: transparent;
+    border: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 0;
+  }
+
+  .review-panel__card {
+    background: var(--white);
+    border: 0;
+    border-radius: var(--mobile-radius);
+    padding: 4px 16px;
+  }
+
+  .review-panel__section {
+    padding: 16px 0;
+  }
+
+  .quick-action {
+    justify-content: space-between;
+    min-height: 48px;
+    padding: 10px 14px;
+    text-align: left;
+    width: 100%;
+  }
+
+  .quick-action span {
+    font-size: 15px;
+    line-height: 20px;
+  }
+
+  .review-panel__actions {
+    margin: 0;
+  }
+
+  .question-builder {
+    gap: 12px;
+  }
+
+  .academic-assistant {
+    background: var(--white);
+    border: 0;
+    border-radius: var(--mobile-radius);
+    padding: 16px;
+  }
+
+  .question-card {
+    background: var(--white);
+    border: 0;
+    padding: 16px;
+  }
+
+  .question-card .question-prompt,
+  .question-card legend {
+    font-size: 16px;
+    line-height: 22px;
+  }
+
+  .question-card .question-prompt textarea {
+    min-height: 104px;
+  }
+
+  .question-alternative {
+    gap: 8px;
+    grid-template-columns: 18px 20px minmax(0, 1fr);
+    min-height: 56px;
+    padding: 10px;
+  }
+
+  .question-alternative textarea,
+  .question-card textarea {
+    min-width: 0;
+  }
+
+  /* ---------- Meus casos ---------- */
+  .management-page {
+    gap: 12px;
+    padding: 16px var(--mobile-gutter) 32px;
+  }
+
+  .management-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .management-toolbar .search-box {
+    background: var(--white);
+    height: 48px;
+    width: 100%;
+  }
+
+  .management-toolbar__actions {
+    display: grid;
+    gap: 8px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .management-toolbar__actions > .button:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .management-toolbar__actions .filter-menu,
+  .management-toolbar__actions .filter-menu__trigger,
+  .management-toolbar__actions .cases-export-action,
+  .management-toolbar__actions .cases-export-action .button {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .management-toolbar__actions .filter-menu__trigger,
+  .management-toolbar__actions .button--outline {
+    background: var(--white);
+    height: 48px;
+  }
+
+  .design-table.design-table--cases tbody tr {
+    background: var(--white);
+    border: 1px solid transparent;
+    box-shadow: 0 1px 2px rgba(16, 24, 64, 0.04);
+    gap: 4px 12px;
+    padding: 14px 14px 10px;
+  }
+
+  /* Caso selecionado: o cartão inteiro fica destacado, não cada célula. */
+  .design-table.design-table--cases tbody tr.case-table-row--selected {
+    background: #f1f4ff;
+    border-color: var(--primary-medium);
+  }
+
+  .design-table--cases tbody tr.case-table-row--selected > td {
+    background: transparent;
+  }
+
+  .design-table--cases .cases-cell--title strong {
+    font-size: 16px;
+    line-height: 22px;
+  }
+
+  .design-table.design-table--cases tbody td[data-label] {
+    font-size: 13px;
+    line-height: 18px;
+  }
+
+  .design-table.design-table--cases tbody .cases-cell--actions {
+    border-top: 1px solid var(--gray-100);
+    margin-top: 4px;
+    padding-top: 6px;
+  }
+
+  .design-table--cases .row-actions {
+    gap: 4px;
+    margin-top: 0;
+  }
+
+  .design-table--cases .row-actions button,
+  .design-table--cases .row-actions a {
+    align-items: center;
+    display: inline-flex;
+    height: 40px;
+    justify-content: center;
+    width: 40px;
+  }
+
+  .table-pagination {
+    background: var(--white);
+    border-radius: var(--mobile-radius);
+    margin-top: 4px;
+    padding: 8px 12px;
+  }
+
+  /* ---------- Configurações ---------- */
+  .settings-redesign__tabs {
+    margin: 0 calc(-1 * var(--mobile-gutter));
+    padding: 0 var(--mobile-gutter) 4px;
+  }
+
+  .settings-redesign__content {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .settings-redesign__section,
+  .settings-redesign__section--profile,
+  .settings-redesign__section--password {
+    background: var(--white);
+    border: 0;
+    border-radius: var(--mobile-radius);
+    padding: 20px 16px;
+  }
+
+  .settings-redesign__section + .settings-redesign__section {
+    border: 0;
+  }
+
+  .settings-redesign__section::before,
+  .settings-redesign__section::after {
+    display: none;
+  }
+
+  /* ---------- Funcionalidade indisponível ---------- */
+  .unavailable-feature {
+    min-height: 0;
+    padding: 16px var(--mobile-gutter) 32px;
+  }
+
+  .unavailable-feature__card {
+    background: var(--white);
+    border: 0;
+    border-radius: var(--mobile-radius);
+  }
+
+  /* ---------- Janelas (modais) viram painéis que sobem do rodapé ---------- */
+  .modal-backdrop:not(.modal-backdrop--case-generation) {
+    align-items: flex-end;
+    padding: 24px 0 0;
+  }
+
+  .modal-backdrop:not(.modal-backdrop--case-generation) > * {
+    border-radius: 22px 22px 0 0;
+    margin: 0;
+    max-height: calc(100dvh - 24px);
+    max-width: none;
+    overflow-y: auto;
+    padding-bottom: calc(20px + env(safe-area-inset-bottom));
+    padding-left: 20px;
+    padding-right: 20px;
+    width: 100%;
+  }
+
+  /* ---------- Login e cadastro ---------- */
+  .login-header p {
+    align-items: center;
+  }
+}
