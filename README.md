@@ -23,11 +23,9 @@
 
 <div align="center">
 
-<video src="https://github.com/EmanuelCandido/ClinicCase/raw/main/docs/media/previa.mp4" poster="docs/media/previa.webp" controls muted loop playsinline width="560">
-  <a href="docs/media/previa.mp4"><img src="docs/media/previa.webp" alt="Prévia do ClinicCase gerando um caso clínico com IA" width="560" /></a>
-</video>
+<a href="docs/media/previa.mp4"><img src="docs/media/previa.gif" alt="Prévia do ClinicCase gerando um caso clínico com IA" width="560" /></a>
 
-<sub>Se o vídeo não carregar, <a href="docs/media/previa.mp4">abra a prévia em MP4</a>.</sub>
+<sub>Clique na imagem para ver a <a href="docs/media/previa.mp4">prévia em MP4</a> (melhor qualidade).</sub>
 
 </div>
 
