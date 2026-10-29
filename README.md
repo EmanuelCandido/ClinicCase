@@ -21,13 +21,9 @@
 
 ## Prévia
 
-<div align="center">
+O professor descreve o caso e a plataforma gera o caso clínico com IA:
 
-<a href="docs/media/previa.mp4"><img src="docs/media/previa.gif" alt="Prévia do ClinicCase gerando um caso clínico com IA" width="560" /></a>
-
-<sub>Clique na imagem para ver a <a href="docs/media/previa.mp4">prévia em MP4</a> (melhor qualidade).</sub>
-
-</div>
+https://github.com/user-attachments/assets/aff93db3-d61c-43e0-be2b-4042ada0946a
 
 ## Sobre o projeto
 
